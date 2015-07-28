@@ -21,7 +21,9 @@ public class DriverManager extends Configured implements Tool {
 	            return -1;
 	        }
 	         
-	        Job job = new Job(getConf());
+	        Configuration conf = new Configuration();
+	        conf.set("mapreduce.map.memory.mb", "4096");
+	        Job job = Job.getInstance(conf);
 	        job.setJarByClass(DriverManager.class);
 	        job.setJobName(this.getClass().getName());
 	        job.setNumReduceTasks(0);
