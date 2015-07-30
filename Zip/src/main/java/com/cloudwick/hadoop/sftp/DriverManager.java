@@ -26,7 +26,7 @@ public class DriverManager extends Configured implements Tool {
 	        
 	        Configuration conf = new Configuration();
 	        conf.set("mapreduce.job.queuename", "dev1");
-	        conf.set("file.pattern", "Emp*");
+	        conf.set("file.pattern", "gsod*");
 	         
 	        conf.set("destPath", args[0]);
 	        Job job = Job.getInstance(conf);
@@ -40,6 +40,10 @@ public class DriverManager extends Configured implements Tool {
 	         
 	        job.setInputFormatClass(ZipFileInputFormat.class);
 	        job.setOutputFormatClass(TextOutputFormat.class);
+	        
+	        /*
+	         * uncomment to get output format as gzip
+	         */
 //	        TextOutputFormat.setCompressOutput(job, true);
 //	        TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class); 
 

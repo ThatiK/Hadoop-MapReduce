@@ -1,20 +1,25 @@
 package com.cloudwick.hadoop.sftp;
- 
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.hadoop.conf.Configuration; 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
@@ -25,7 +30,11 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 	private BooleanWritable currentValue;
 	private boolean isFinished = false;
 	private Configuration conf;
-
+	private Properties props;
+	private Session session;
+	private ChannelSftp sftpChannel;
+	
+	
 	/*
 	 * For ach split (1 mapper for each zip file) makes a sftp connection.
 	 * Fetches the stream for each zip file. Zip stream is closed in close()
@@ -39,18 +48,37 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 
 		String[] sourceName = ((SFTPZipsListInputSplit) inputSplit)
 				.getLocations();
+		props = new Properties();
+		props.load(getClass().getClassLoader().getResourceAsStream(
+				path_sftp_properties));
 		try {
-			Properties prop = new Properties();
-			prop.load(getClass().getClassLoader().getResourceAsStream(
-					path_sftp_properties));
-			SFTPClient sftpClient = new SFTPClient(prop);
-			zip = new ZipInputStream(sftpClient.getInputStream(prop,
-					sourceName[0]));
-		} catch (SftpException e) {
-			e.printStackTrace();
+			zip = new ZipInputStream(getZipInputStream(sourceName[0]));
 		} catch (JSchException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SftpException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	public InputStream getZipInputStream(String sourceName)
+			throws JSchException, SftpException {
+		JSch jsch = new JSch();
+
+		session = jsch.getSession(props.getProperty("source-user"),
+				props.getProperty("source-host"),
+				Integer.parseInt(props.getProperty("source-port", "22")));
+
+		session.setPassword(props.getProperty("source-password"));
+		Properties sftpConf = new Properties();
+		sftpConf.put("StrictHostKeyChecking", "no");
+		session.setConfig(sftpConf);
+		session.connect();
+		sftpChannel = (ChannelSftp) session.openChannel("sftp");
+		sftpChannel.connect();
+		return sftpChannel.get(props.getProperty("source-directory")
+				+ sourceName);
 	}
 
 	/*
@@ -87,8 +115,6 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 
 	public boolean patternEntryCheck(ZipEntry entry) throws IOException {
 		String fileName = entry.getName();
-		
-		
 
 		// file.pattern passed as -Dfile.pattern=pattern
 		String filePattern = conf.get("file.pattern");
@@ -101,7 +127,8 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 		}
 
 		if (matcher != null && matcher.find()) {
-			System.out.println("pattern entry check passed -- file name: "+fileName);
+			System.out.println("pattern entry check passed -- file name: "
+					+ fileName);
 			// Set the key
 			currentKey = new Text(fileName);
 
@@ -147,6 +174,9 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 	public void close() throws IOException {
 		try {
 			zip.close();
+			System.out.println("zip input stream closed in record reader");
+			if ((session != null) && (session.isConnected()))
+				session.disconnect();
 		} catch (Exception e) {
 		}
 	}

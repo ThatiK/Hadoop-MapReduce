@@ -46,5 +46,6 @@ public class HDFSClient {
 			IOUtils.closeStream(fsdos);
 		}
 		IOUtils.closeStream(fsdos);
+		System.out.println("ioutils stream closed");
 	}
 }

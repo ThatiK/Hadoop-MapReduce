@@ -75,10 +75,6 @@ public class SFTPClient {
 		}
 		return zipFileNames;
 	}
-	
-	//return inputstream for zip file under source-directory
-	public InputStream getInputStream(Properties prop,String sourceName) throws SftpException { 
-		return this.sftpChannel.get(prop.getProperty("source-directory") + sourceName);
-	}
+	 
 
 }
