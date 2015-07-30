@@ -16,9 +16,9 @@ import org.apache.hadoop.util.ToolRunner;
 public class DriverManager extends Configured implements Tool { 
 	 public int run(String[] args) throws Exception {
 
-	        if (args.length != 1) {
+	        if (args.length != 2) {
 	            System.out.printf(
-	                    "Usage: %s [generic options] <output dir> \n", getClass()
+	                    "Usage: %s [generic options] <gz output dir> <log output dir> \n", getClass()
 	                    .getSimpleName());
 	            ToolRunner.printGenericCommandUsage(System.out);
 	            return -1;
@@ -34,7 +34,7 @@ public class DriverManager extends Configured implements Tool {
 	        job.setJobName(this.getClass().getName());
 	        job.setNumReduceTasks(0);
  
-	        FileOutputFormat.setOutputPath(job, new Path(args[0]));
+	        FileOutputFormat.setOutputPath(job, new Path(args[1]));
 	        
 	        job.setMapperClass(ZipMapper.class); 
 	         

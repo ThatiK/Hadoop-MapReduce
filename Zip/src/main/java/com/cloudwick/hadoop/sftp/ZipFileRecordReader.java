@@ -33,8 +33,7 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 	private Properties props;
 	private Session session;
 	private ChannelSftp sftpChannel;
-	
-	
+
 	/*
 	 * For ach split (1 mapper for each zip file) makes a sftp connection.
 	 * Fetches the stream for each zip file. Zip stream is closed in close()
@@ -53,6 +52,7 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 				path_sftp_properties));
 		try {
 			zip = new ZipInputStream(getZipInputStream(sourceName[0]));
+			System.out.println("zip input stream opened for this map");
 		} catch (JSchException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -75,8 +75,10 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 		sftpConf.put("StrictHostKeyChecking", "no");
 		session.setConfig(sftpConf);
 		session.connect();
+		System.out.println("session opened for this map");
 		sftpChannel = (ChannelSftp) session.openChannel("sftp");
 		sftpChannel.connect();
+		System.out.println("sftp channel connected for this map");
 		return sftpChannel.get(props.getProperty("source-directory")
 				+ sourceName);
 	}
@@ -115,6 +117,7 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 
 	public boolean patternEntryCheck(ZipEntry entry) throws IOException {
 		String fileName = entry.getName();
+		System.out.println("file to check for pattern");
 
 		// file.pattern passed as -Dfile.pattern=pattern
 		String filePattern = conf.get("file.pattern");
@@ -148,6 +151,8 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 		} else {
 			// if file not matched with pattern skip the file and move to next
 			// file
+			System.out.println("pattern entry check failed -- file name: "
+					+ fileName);
 			return getNextKey();
 		}
 	}
@@ -175,8 +180,10 @@ public class ZipFileRecordReader extends RecordReader<Text, BooleanWritable> {
 		try {
 			zip.close();
 			System.out.println("zip input stream closed in record reader");
-			if ((session != null) && (session.isConnected()))
+			if ((session != null) && (session.isConnected())) {
 				session.disconnect();
+				System.out.println("session for sftp closed");
+			}
 		} catch (Exception e) {
 		}
 	}
