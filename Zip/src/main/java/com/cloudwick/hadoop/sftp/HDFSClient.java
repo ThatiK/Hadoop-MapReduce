@@ -1,21 +1,16 @@
 package com.cloudwick.hadoop.sftp;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.IOException; 
 import java.util.zip.ZipInputStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.IOUtils; 
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionOutputStream;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.Compressor;
-import org.apache.hadoop.io.compress.GzipCodec;
-import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.io.compress.CompressionCodecFactory; 
 
 public class HDFSClient {
 	private Configuration hdfsConfig;

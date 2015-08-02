@@ -21,8 +21,7 @@ import org.apache.hadoop.tools.util.RetriableCommand;
 public class RetriableSFTPCopyCommand extends RetriableCommand {
 	private Configuration hdfsConf;
 	private ZipInputStream zip;
-	private boolean currentCopySucess = false;
-	private Boolean isFinished = false;
+	private boolean currentCopySucess = false; 
 	Session session = null;
 	ZipEntry entry = null;
 
@@ -55,7 +54,7 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 			ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
 			sftpChannel.connect();
 			System.out.println("sftp channel connected for this map");
-			System.out.println("prop " + props.getProperty("source-directory"));
+			System.out.println("source directory " + props.getProperty("source-directory"));
 			System.out.println("zip file name " + zipFileName);
 			zip = new ZipInputStream(sftpChannel.get(props
 					.getProperty("source-directory") + zipFileName));
@@ -68,15 +67,7 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 				throw ex;
 			} finally {
 				this.close();
-			}
-
-			// while (!isFinished) {
-			// boolean doCallnext = getNextKey();
-			// if (doCallnext)
-			// getNextKey();
-			// else
-			// break;
-			// }
+			} 
 
 			if (currentCopySucess)
 				return true;
@@ -91,17 +82,7 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 
 			throw (ex);
 		}
-	}
-
-	// public boolean getNextKey() throws IOException, JSchException,
-	// SftpException {
-	// ZipEntry entry = zip.getNextEntry();
-	// if (entry == null) {
-	// isFinished = true;
-	// return false;
-	// } else
-	// return patternEntryCheck(entry);
-	// }
+	} 
 
 	public void patternEntryCheck(ZipEntry entry) throws IOException,
 			JSchException, SftpException {
