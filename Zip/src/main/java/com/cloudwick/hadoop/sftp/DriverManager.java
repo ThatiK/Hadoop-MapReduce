@@ -26,7 +26,8 @@ public class DriverManager extends Configured implements Tool {
 	        
 	        Configuration conf = new Configuration();
 	        conf.set("mapreduce.job.queuename", "dev1");
-	        conf.set("file.pattern", "Emp_[0-9]_1");
+	        conf.set("file.pattern", "gsod.*");
+	        conf.set("mapreduce.map.tasks", "2");
 	         
 	        conf.set("destPath", args[0]);
 	        Job job = Job.getInstance(conf);

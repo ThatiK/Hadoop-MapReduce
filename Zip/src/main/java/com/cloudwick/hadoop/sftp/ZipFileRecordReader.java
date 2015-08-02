@@ -2,12 +2,19 @@ package com.cloudwick.hadoop.sftp;
 
 import java.io.IOException;
  
+import java.util.Iterator;
+
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
+//step 1: call to nextKeyValue()
+//step 2: call to getProgress()
+//if step 2 returns zero --> step 3: call to getCurrentKey()
+//step 4: call to getCurrentValue()
+//
 public class ZipFileRecordReader extends RecordReader<Text, NullWritable> {
 
 	private Text currentKey;

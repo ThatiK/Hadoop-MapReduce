@@ -20,8 +20,9 @@ import org.apache.hadoop.tools.util.RetriableCommand;
 
 public class RetriableSFTPCopyCommand extends RetriableCommand {
 	private Configuration hdfsConf;
+	HDFSClient hdfsClient;
 	private ZipInputStream zip;
-	private boolean currentCopySucess = false; 
+	private boolean currentCopySucess = false;
 	Session session = null;
 	ZipEntry entry = null;
 
@@ -34,7 +35,8 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 		// TODO Auto-generated method stub
 
 		assert arguments.length == 3 : "Unexpected argument list.";
-		String zipFileName = (String) arguments[0];
+		String sources = (String) arguments[0];
+		String[] zipFileNames = sources.split(",");
 		Properties props = (Properties) arguments[1];
 		hdfsConf = (Configuration) arguments[2];
 
@@ -54,21 +56,34 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 			ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
 			sftpChannel.connect();
 			System.out.println("sftp channel connected for this map");
-			System.out.println("source directory " + props.getProperty("source-directory"));
-			System.out.println("zip file name " + zipFileName);
-			zip = new ZipInputStream(sftpChannel.get(props
-					.getProperty("source-directory") + zipFileName));
+			System.out.println("source directory "
+					+ props.getProperty("source-directory"));
 
-			try {
-				while ((entry = zip.getNextEntry()) != null) {
-					patternEntryCheck(entry);
+			for (int i = 0; i < zipFileNames.length; i++) {
+				try {
+					
+					zip = new ZipInputStream(sftpChannel.get(props
+							.getProperty("source-directory") + zipFileNames[i]));
+					System.out.println("zip input stream opened for "+ zipFileNames[i]);
+					hdfsClient = new HDFSClient(hdfsConf);
+					while ((entry = zip.getNextEntry()) != null) {
+						patternEntryCheck(entry);
+					}
+				} catch (Exception ex) {
+					if (zip != null) {
+						zip.close();
+						System.out
+								.println("zip input stream closed in catch for :" + zipFileNames[i]);
+					}
+					throw ex;
+				} finally {
+					if (zip != null) {
+						zip.close();
+						System.out
+								.println("zip input stream closed in finally for :" +zipFileNames[i]);
+					}
 				}
-			} catch (Exception ex) {
-				throw ex;
-			} finally {
-				this.close();
-			} 
-
+			}
 			if (currentCopySucess)
 				return true;
 			else
@@ -82,7 +97,10 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 
 			throw (ex);
 		}
-	} 
+		finally{
+			this.close();
+		}
+	}
 
 	public void patternEntryCheck(ZipEntry entry) throws IOException,
 			JSchException, SftpException {
@@ -103,21 +121,18 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 			System.out.println("pattern entry check passed -- file name: "
 					+ fileName);
 			currentCopySucess = false;
-			currentCopySucess = doCopy(fileName, zip, hdfsConf);
-			zip.closeEntry(); 
-		}
-		else
+			currentCopySucess = doCopy(fileName, zip);
+			zip.closeEntry();
+		} else
 			System.out.println("pattern entry check failed -- file name: "
 					+ fileName);
 
 	}
 
-	public boolean doCopy(String fileName, ZipInputStream zipInputStream,
-			Configuration conf) throws JSchException, SftpException,
-			IOException {
+	public boolean doCopy(String fileName, ZipInputStream zipInputStream)
+			throws JSchException, SftpException, IOException {
 
-		HDFSClient hdfsClient = new HDFSClient(conf);
-		Path path = new Path(conf.get("destPath"));
+		Path path = new Path(hdfsConf.get("destPath"));
 
 		hdfsClient.copyFromStream(zipInputStream, path + "/" + fileName);
 
@@ -126,11 +141,6 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 	}
 
 	public void close() throws IOException {
-		if (zip != null) {
-			zip.close();
-			System.out
-					.println("zip input stream closed in RetriableSFTPCopyCommand");
-		}
 
 		if ((session != null) && (session.isConnected())) {
 			session.disconnect();

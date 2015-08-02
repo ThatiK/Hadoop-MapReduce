@@ -5,15 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;   
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.jobcontrol.Job;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat; 
  
+
+
 
 
 
@@ -48,7 +52,7 @@ public class ZipFileInputFormat extends FileInputFormat<Text, NullWritable> {
 	 * We can create append location or any other information appended to the string and fetch the relevant information later.
 	 */
 	@Override
-	public List<InputSplit> getSplits(JobContext arg0) throws IOException {
+	public List<InputSplit> getSplits(JobContext job) throws IOException {
 		// TODO Auto-generated method stub
 		// return super.getSplits(arg0);
 		List<InputSplit> splits = new ArrayList<InputSplit>();
@@ -63,13 +67,35 @@ public class ZipFileInputFormat extends FileInputFormat<Text, NullWritable> {
 			System.out.println(prop.getProperty("source-password"));
 			System.out.println(prop.getProperty("source-directory"));
 			
+			int numSplits = job.getConfiguration().getInt("mapreduce.map.tasks", 1);
+			System.out.println("Number of mappers: "+numSplits);
+			
 			SFTPClient sftpClient = new SFTPClient(prop); 
 			
 			List<String> fileNames = sftpClient.getZipFileNames(prop);
-			for (String fileName : fileNames) {
-				String sourceName = fileName;
-				splits.add(new SFTPZipsListInputSplit(sourceName));
+			int start =0;
+			int end =0;
+			for(int i=1;i<=numSplits;i++){
+				start=end;
+				if(i != numSplits){
+					end = (int) Math.ceil(i * fileNames.size() / numSplits);
+				}
+				else{
+					end = fileNames.size();
+				}
+				List<String> subList = fileNames.subList(start, end);
+				String sources = null;
+				
+				for(Object obj : subList){
+					sources = StringUtils.join(subList, ",");
+				}
+				splits.add(new SFTPZipsListInputSplit(sources));
+					
 			}
+//			for (String fileName : fileNames) {
+//				String sourceName = fileName;
+//				splits.add(new SFTPZipsListInputSplit(sourceName));
+//			}
 		} catch (JSchException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
