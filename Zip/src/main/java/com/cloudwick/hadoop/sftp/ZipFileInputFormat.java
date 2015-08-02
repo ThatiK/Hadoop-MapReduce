@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.hadoop.fs.Path;  
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -18,10 +19,11 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 
 
+
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 
-public class ZipFileInputFormat extends FileInputFormat<Text, NullWritable> {
+public class ZipFileInputFormat extends FileInputFormat<Text, BooleanWritable> {
 	
 	private static final String path_sftp_properties = "config.properties";
 	
@@ -35,7 +37,7 @@ public class ZipFileInputFormat extends FileInputFormat<Text, NullWritable> {
 	}
 
 	@Override
-	public RecordReader<Text, NullWritable> createRecordReader(
+	public RecordReader<Text, BooleanWritable> createRecordReader(
 			InputSplit split, TaskAttemptContext context) throws IOException,
 			InterruptedException {
 		return new ZipFileRecordReader();

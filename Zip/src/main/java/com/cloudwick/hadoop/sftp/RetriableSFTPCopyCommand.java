@@ -24,6 +24,7 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 	private boolean currentCopySucess = false;
 	private Boolean isFinished = false;
 	Session session = null;
+	ZipEntry entry = null;
 
 	public RetriableSFTPCopyCommand(String description) {
 		super(description);
@@ -54,11 +55,28 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 			ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
 			sftpChannel.connect();
 			System.out.println("sftp channel connected for this map");
+			System.out.println("prop " + props.getProperty("source-directory"));
+			System.out.println("zip file name " + zipFileName);
 			zip = new ZipInputStream(sftpChannel.get(props
 					.getProperty("source-directory") + zipFileName));
 
-			while (zip.available() != 0 || isFinished)
-				getNextKey();
+			try {
+				while ((entry = zip.getNextEntry()) != null) {
+					patternEntryCheck(entry);
+				}
+			} catch (Exception ex) {
+				throw ex;
+			} finally {
+				this.close();
+			}
+
+			// while (!isFinished) {
+			// boolean doCallnext = getNextKey();
+			// if (doCallnext)
+			// getNextKey();
+			// else
+			// break;
+			// }
 
 			if (currentCopySucess)
 				return true;
@@ -75,15 +93,18 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 		}
 	}
 
-	public void getNextKey() throws IOException, JSchException, SftpException {
-		ZipEntry entry = zip.getNextEntry();
-		if (entry == null) {
-			isFinished = true;
-		} else
-			patternEntryCheck(entry);
-	}
+	// public boolean getNextKey() throws IOException, JSchException,
+	// SftpException {
+	// ZipEntry entry = zip.getNextEntry();
+	// if (entry == null) {
+	// isFinished = true;
+	// return false;
+	// } else
+	// return patternEntryCheck(entry);
+	// }
 
-	public void patternEntryCheck(ZipEntry entry) throws IOException, JSchException, SftpException  {
+	public void patternEntryCheck(ZipEntry entry) throws IOException,
+			JSchException, SftpException {
 		String fileName = entry.getName();
 		System.out.println("file to check for pattern: " + fileName);
 
@@ -100,31 +121,14 @@ public class RetriableSFTPCopyCommand extends RetriableCommand {
 		if (matcher != null && matcher.find()) {
 			System.out.println("pattern entry check passed -- file name: "
 					+ fileName);
-			 
-			try {
-				currentCopySucess = doCopy(fileName, zip, hdfsConf);
-				zip.closeEntry(); 
-				getNextKey();
-			} catch (JSchException e) {
-				// TODO Auto-generated catch block
-				throw e;
-			} catch (SftpException e) {
-				// TODO Auto-generated catch block
-				throw e;
-			} 
-			finally{
-				this.close();
-			}
-			
-			 
-
-			
-		} else { 
+			currentCopySucess = false;
+			currentCopySucess = doCopy(fileName, zip, hdfsConf);
+			zip.closeEntry(); 
+		}
+		else
 			System.out.println("pattern entry check failed -- file name: "
 					+ fileName);
-			getNextKey();
-		}
-		
+
 	}
 
 	public boolean doCopy(String fileName, ZipInputStream zipInputStream,
