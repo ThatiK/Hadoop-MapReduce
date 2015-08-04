@@ -1,7 +1,9 @@
 package com.cloudwick.hadoop.Zip;
  
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path; 
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.Text;  
 import org.apache.hadoop.mapreduce.Job;   
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -13,15 +15,20 @@ import org.apache.hadoop.util.ToolRunner;
 public class DriverManager extends Configured implements Tool { 
 	 public int run(String[] args) throws Exception {
 
-	        if (args.length != 2) {
+	        if (args.length != 3) {
 	            System.out.printf(
-	                    "Usage: %s [generic options] <input dir> <output dir> <filter files pattern> \n", getClass()
+	                    "Usage: %s [generic options] <input dir> <output log dir> <output data dir>  \n", getClass()
 	                    .getSimpleName());
 	            ToolRunner.printGenericCommandUsage(System.out);
 	            return -1;
 	        }
 	         
-	        Job job = new Job(getConf());
+	        Configuration conf = new Configuration();
+	        conf.set("mapreduce.job.queuename", "dev1");
+	        conf.set("file.pattern", "Emp*"); 
+	         
+	        conf.set("destPath", args[2]);
+	        Job job = Job.getInstance(conf);
 	        job.setJarByClass(DriverManager.class);
 	        job.setJobName(this.getClass().getName());
 	        job.setNumReduceTasks(0);
@@ -35,11 +42,11 @@ public class DriverManager extends Configured implements Tool {
 	        job.setInputFormatClass(ZipFileInputFormat.class);
 	        job.setOutputFormatClass(TextOutputFormat.class);
 
-	        job.setMapOutputKeyClass(Text.class);
-	        job.setMapOutputValueClass(Text.class);
+//	        job.setMapOutputKeyClass(Text.class);
+//	        job.setMapOutputValueClass(Text.class);
 
 	        job.setOutputKeyClass(Text.class);
-	        job.setOutputValueClass(Text.class);
+	        job.setOutputValueClass(BooleanWritable.class);
 
 	        if (job.waitForCompletion(true)) { 
 	            return 0;
